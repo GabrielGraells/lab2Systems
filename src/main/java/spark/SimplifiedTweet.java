@@ -1,11 +1,9 @@
 package spark;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import java.io.Serializable;
 import java.util.Optional;
 
 public class SimplifiedTweet {
@@ -63,7 +61,7 @@ public class SimplifiedTweet {
 
         Optional<SimplifiedTweet> tweetopt = Optional.empty();
 
-        JsonElement je = JsonParser.parseString(jsonStr);
+        JsonElement je = new JsonParser().parse(jsonStr);
 
         if (je.isJsonNull())
             return tweetopt;
