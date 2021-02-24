@@ -57,6 +57,20 @@ public class SimplifiedTweet {
         return this.timestampMs;
     }
 
+    public String getFormatedOutputTweet() {
+
+        String output = "##############################################################\n" +
+                        "* TweetID: " + this.tweetId + "\n" +
+                        "* UserID: " + this.userId + "\n" +
+                        "* UserName: " + this.userName + "\n" +
+                        "* Language: " + this.language + "\n"  +
+                        "* TimeStamp: " + this.timestampMs + "\n" +
+                        "* Text: " + this.text + "\n" +
+                        "##############################################################\n\n";
+
+        return output;
+    }
+
     public static Optional<SimplifiedTweet> fromJson(String jsonStr) {
 
         Optional<SimplifiedTweet> tweetopt = Optional.empty();

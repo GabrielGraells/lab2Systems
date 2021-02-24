@@ -44,17 +44,14 @@ public class TwitterFilterLanguageApp {
 			e.printStackTrace();
 		}
         */
-        filteredTweets.map(s -> s.getId()+s.getUserId()+s.getUserName()+s.getText()+s.getTimeStampMs()+"##############################################################\\n\\n").saveAsTextFile(outputFile);
+        filteredTweets.map(s -> s.getFormatedOutputTweet()).saveAsTextFile(outputFile);
         
         
         
-		//FileLanguageFilter f = new FileLanguageFilter(output);
+
         System.out.println("\n\n##############################################################");
-        //filteredTweets.map(tweet -> f.filterLanguage(tweet));
         System.out.println(filteredTweets.count());
         System.out.println("##############################################################\n\n");
-        
-        filteredTweets.saveAsTextFile(outputFile);
 
         final S3Uploader uploader = new S3Uploader(bucket, language, "default");
         uploader.upload(outputFile);
