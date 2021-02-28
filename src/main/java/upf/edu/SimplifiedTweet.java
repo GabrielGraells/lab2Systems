@@ -1,4 +1,4 @@
-package spark;
+package upf.edu;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
