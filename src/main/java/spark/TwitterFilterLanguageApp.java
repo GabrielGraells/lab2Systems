@@ -45,7 +45,6 @@ public class TwitterFilterLanguageApp {
         JavaSparkContext sparkContext = new JavaSparkContext(conf);
 
         // Load input
-
         JavaRDD<String> tweets = sparkContext.textFile(inputDir);
         JavaRDD<SimplifiedTweet> filteredTweets =  tweets
                 .map(s-> SimplifiedTweet.fromJson(s))
