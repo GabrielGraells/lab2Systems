@@ -9,6 +9,7 @@ import java.util.Comparator;
 
 
 import scala.Tuple2;
+import scala.Tuple3;
 
 import java.util.List;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -32,6 +33,8 @@ public class MostRetweetedApp {
 
         String outputFile = argsList.get(1);
         String inputDir = argsList.get(0);
+        
+        long startTime = System.nanoTime();
 
         //Create a SparkContext to initialize
         SparkConf conf = new SparkConf().setAppName("MostRetweetedApp");
@@ -60,70 +63,61 @@ public class MostRetweetedApp {
         
         // sort by num of occurences
         JavaPairRDD<Tuple2<Integer, Long>, Integer> retweetusersSortedByCount = countInKey.sortByKey(new TupleComparator(),false);
-
-        // Take first 10   
-        List<Tuple2<Tuple2<Integer, Long>, Integer>> output = retweetusersSortedByCount.take(3);
       
-        //Create a list with the top 10
-        List<Long> users_2= new ArrayList<>();
-        output.forEach(s->users_2.add(s._1._2));
+        
+        //***Keep users with more than 10 tweets retweeted***
+        //JavaPairRDD<Tuple2<Integer, Long>, Integer> retweetusersSortedByCountmore10 = retweetusersSortedByCount.filter(m->filteredTweets.filter(s->s.getretweetuid()==m._1._2).distinct().count()>10);
+        
 
         //***Get most retweeted tweets***
-        
+      
         JavaPairRDD<Long, Integer> retweets = filteredTweets.mapToPair(s -> new Tuple2<Long,Integer>(s.getretweetid(),1))
         		.reduceByKey((x, y) -> x + y);
         
-        JavaPairRDD<Tuple2<Integer,Long>, Integer> retweetInKey = users.mapToPair(a -> new Tuple2(new Tuple2<Integer,Long>(a._2, a._1), null));
+        JavaPairRDD<Tuple2<Integer,Long>, Integer> retweetInKey = retweets.mapToPair(a -> new Tuple2(new Tuple2<Integer,Long>(a._2, a._1), null));
         
         //sort
-        JavaPairRDD<Tuple2<Integer, Long>, Integer> retweetSortedByCount = countInKey.sortByKey(new TupleComparator(),false);
-
-        // collect result    
-        List<Tuple2<Tuple2<Integer, Long>, Integer>> outputr = retweetSortedByCount.collect();
-      
-        //Add the retweetids to a list, to later filter
-        List<Long> retweets_3 = new ArrayList<>();
-        outputr.forEach(s->retweets_3.add(s._1._2));
+        JavaPairRDD<Tuple2<Integer,Long>, Integer> retweetSortedByCount = retweetInKey.sortByKey(new TupleComparator(),false);
         
-        //**Keep only the tweets that were retweeted**
-        JavaRDD <ExtendedSimplifiedTweet> retweets_rdd = filteredTweets.filter(s->retweets_3.contains(s.getId()));
+        //We tried many ways using mapToPair(s -> new Tuple2<Long, ExtendedSimplifiedTweet> and .mapToPair(s->new Tuple2<>(new Tuple2<>(s.getretweetid(),s.getretweetuid()),s)
+        //However, we couldn't managed to get extendedsimplifiedtweet for each retweet, to print the output
         
-
-        retweets_rdd.take(5).forEach(s->System.out.println(s.getId()+"###########"));
-        
+        //Add the retweetids to a list, to later filter with order. We know this is not optimal, we tried different options with rdds but didn't compile
+        List<Long> retweets_3 = retweetSortedByCount.map(x->x._1._2).collect(); 
+    
+        //***Used for debugging***
         /*
         //Print most retweeted users and retweets
         for (Tuple2<?, ?> tuple : output) {
-        	System.out.println("##############################################");
+        	System.out.println("##############################################-USERS");
+            System.out.println(tuple._1());
+        }*/
+        
+        /* for (Tuple2<?, ?> tuple : outputr) {
+        	System.out.println("##############################################-RETWEETS");
             System.out.println(tuple._1());
         }
+        */
         
-        for (Tuple2<?, ?> tuple : outputr) {
-        	System.out.println("##############################################");
-            System.out.println(tuple._1());
-            //System.out.println(retweets_3.isEmpty());
-        }
-      */
+        //Print console most retweeted tweets for most retweeted users
+        retweetusersSortedByCount.take(10).forEach(s->original_tweets.filter(p->p.getUserId()==s._1._2).filter(m->retweets_3.contains(m.getId())).take(10).forEach(t->System.out.println(t.getFormatedOutputTweet())));
         
-      
-        //Print retweeted tweets
-        for (Long usrs: users_2) {
-	        	JavaRDD<ExtendedSimplifiedTweet>  fin = retweets_rdd.filter(s->s.getUserId()==usrs);
-	        	List<ExtendedSimplifiedTweet> test = fin.take(3);
+        /*
+        //Print retweeted tweets using parallelize list	
+	        /*JavaRDD<ExtendedSimplifiedTweet>  fin = original_tweets.filter(s->s.getUserId()==usrs).filter(s->retweets_3.contains(s.getId()));
+	        List<ExtendedSimplifiedTweet> test = fin.take(10);
 	        	
-	        	for (ExtendedSimplifiedTweet t: test) {
-	        		System.out.println("##############################################");
-	                System.out.println(t.getFormatedOutputTweet()+"#######");
-	        	}
+	        JavaRDD<ExtendedSimplifiedTweet> rdd =  sparkContext.parallelize(test);	
 	        	
-	        	
-        	}
-        	//JavaRDD<ExtendedSimplifiedTweet> rdd =  sparkContext.parallelize(test);	
+	        rdd.map(s->s.getFormatedOutputTweet()).repartition(1).saveAsTextFile(outputFile+usrs);	
         	
-        	//rdd.map(s->s.getFormatedOutputTweet()).repartition(1).saveAsTextFile(outputFile+usrs);	
-        	
-        	
-        	
+       */
         
+        long endTime = System.nanoTime();
+        long timeElapsed = endTime - startTime;
+        System.out.println("Time elapsed:"+timeElapsed/1000000+" miliseconds");
+         
     }
+   
+        	
 }
